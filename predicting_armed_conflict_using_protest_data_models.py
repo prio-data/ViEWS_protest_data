@@ -100,6 +100,7 @@ def FetchData(run_id):
         Datasets.append(FetchTable((Queryset("protest_paper_pr_elect_econ_national_bl", "priogrid_month")),'pr_elect_econ_nat_bl'))
         Datasets.append(FetchTable((Queryset("protest_paper_pr_elect_econ_full_bl", "priogrid_month")),'pr_elect_econ_full_bl'))
         
+        
         return(Datasets)
     
     if run_id == 'protest_paper_0109_2022_incidence_03_01':

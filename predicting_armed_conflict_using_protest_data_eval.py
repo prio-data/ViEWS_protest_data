@@ -12,11 +12,12 @@ from datetime import datetime
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
 
-
 def df_eval_scores(
-    models,
+    preds_dict,
+    model_list,
+    run_outcome,
     ev_name,
-    calib,
+    depvar,
     steps,
     round_to = 3, 
     path= None,
@@ -28,24 +29,24 @@ def df_eval_scores(
     for s in steps:
         scores.update({f"{ev_name}_{s}": []})
 
-    for model in models:
+    for model in model_list:
         
-        scores["Model"].append(model['modelname'])
-        mname = model['modelname']
+        scores["Model"].append(model)
+        mname = f'protest_{model}_{run_outcome}'
         
         for step in steps:
             if ev_name == "Brier":
                 scores[f"{ev_name}_{step}"].append(brier_score_loss(
-                    y_true = model[f'df_test_{calib}'][f'actuals_step{step}'],
-                    y_prob = model[f'df_test_{calib}'][f'{mname}_{calib}_step{step}']))
+                    y_true = preds_dict[mname][depvar],
+                    y_prob = preds_dict[mname][f'ss_{mname}_{step}']))
             if ev_name == "AUROC":
                 scores[f"{ev_name}_{step}"].append(roc_auc_score(
-                    y_true = model[f'df_test_{calib}'][f'actuals_step{step}'],
-                    y_score = model[f'df_test_{calib}'][f'{mname}_{calib}_step{step}']))
+                   y_true = preds_dict[mname][depvar],
+                    y_score = preds_dict[mname][f'ss_{mname}_{step}']))
             if ev_name == "AP":
                 scores[f"{ev_name}_{step}"].append(average_precision_score(
-                    y_true = model[f'df_test_{calib}'][f'actuals_step{step}'],
-                    y_score = model[f'df_test_{calib}'][f'{mname}_{calib}_step{step}']))
+                    y_true = preds_dict[mname][depvar],
+                    y_score = preds_dict[mname][f'ss_{mname}_{step}']))
                 
     out = pd.DataFrame(scores)
     df_out = out.set_index("Model")
@@ -226,20 +227,21 @@ def plot_parcoord_allsteps(
         plt.show
         
 def boot_evalmetric(
-    model, 
+    model_name,
+    preds_dict, 
+    depvar,
     step,
     eval_fun,
-    calib,
-    set_seed, # check for reproducibility
+    set_seed, 
     n_bootstraps,
     
 ):
     bootsrapped_scores = []
     rng = np.random.RandomState(set_seed)
     
-    mname = model['modelname']
-    predicted = model[f'df_test_{calib}'][f'{mname}_{calib}_step{step}'].values
-    actuals = model[f'df_test_{calib}'][f'actuals_step{step}'].values  
+    mname = model_name
+    predicted = preds_dict[mname][f'ss_{mname}_{step}'].values
+    actuals = preds_dict[mname][depvar].values  
     
         
     for i in range(n_bootstraps): 
@@ -276,7 +278,8 @@ def plot_bootstrapped_diff(
     steps,
     ymin,
     ymax,
-    path_out
+    path_out,
+    save_as,
 ):
 
     for t,m1,m2 in zip(titles,modellist1,modelllist2):
@@ -349,5 +352,6 @@ def plot_bootstrapped_diff(
                     bbox_to_anchor=(0, 0, 2.5, 1.1),
                     title=f"Models",
                 )
+        
+        plt.savefig(path_out + f"/boot_ap_{t.replace(' vs ','_').replace(' w/o ', 'wo')}_{save_as}.png", bbox_inches='tight')
         plt.show()
-        plt.savefig(path_out,bbox_inches='tight')
