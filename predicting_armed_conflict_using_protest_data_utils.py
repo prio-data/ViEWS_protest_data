@@ -1,13 +1,13 @@
 # Data utils 
 
-import numpy as np  
-import pandas as pd 
-import logging
+import numpy as np
+import pandas as pd
 from typing import Tuple
 import warnings
 import statsmodels.api as sm  # type: ignore
 
-from typing import Any, List
+from typing import Any
+
 
 def prob_to_odds(p: Any, clip=True) -> Any:
     """ Cast probability into odds """
@@ -16,7 +16,6 @@ def prob_to_odds(p: Any, clip=True) -> Any:
         p = np.array(p)
 
     if clip:
-        offset = 1e-10
         offset = 1e-10
         upper = 1 - offset
         lower = 0 + offset
@@ -45,8 +44,9 @@ def logodds_to_prob(logodds: Any) -> Any:
     """ Cast logodds to probability """
     return odds_to_prob(np.exp(logodds))
 
+
 def calibrate_prob(
-    s_test_pred: pd.Series, s_calib_pred: pd.Series, s_calib_actual: pd.Series
+        s_test_pred: pd.Series, s_calib_pred: pd.Series, s_calib_actual: pd.Series
 ) -> pd.Series:
     """ Calibrate s_test_pred
 
@@ -62,7 +62,7 @@ def calibrate_prob(
     """
 
     def _get_scaling_params(
-        s_calib_actual: pd.Series, s_calib: pd.Series
+            s_calib_actual: pd.Series, s_calib: pd.Series
     ) -> Tuple[float, float]:
         """ Gets scaling params """
 
@@ -77,7 +77,7 @@ def calibrate_prob(
         return beta_0, beta_1
 
     def _apply_scaling_params(
-        s_test: pd.Series, beta_0: float, beta_1: float
+            s_test: pd.Series, beta_0: float, beta_1: float
     ) -> pd.Series:
         """ Scale logodds in s_test using intercept and beta"""
         numerator = np.exp(beta_0 + (beta_1 * s_test))
@@ -87,22 +87,22 @@ def calibrate_prob(
         return scaled_probs
 
     def _check_inputs(
-        s_test_pred: pd.Series,
-        s_calib_pred: pd.Series,
-        s_calib_actual: pd.Series,
+            s_test_pred: pd.Series,
+            s_calib_pred: pd.Series,
+            s_calib_actual: pd.Series,
     ) -> None:
-        """ Check that inputs have valid names and could be proabilities """
+        """ Check that inputs have valid names and could be probabilities """
 
         if (
-            s_test_pred.min() < 0
-            or s_test_pred.max() > 1
-            or s_calib_pred.min() < 0
-            or s_calib_pred.max() > 1
+                s_test_pred.min() < 0
+                or s_test_pred.max() > 1
+                or s_calib_pred.min() < 0
+                or s_calib_pred.max() > 1
         ):
             raise RuntimeError(
                 "Probabilities outside (0,1) range were passed to calibrate"
             )
-            
+
         if not s_calib_pred.name != s_test_pred.name:
             warnings.warn(f"{s_calib_pred.name} != {s_test_pred.name}")
         if s_test_pred.isnull().sum() > 0:
@@ -116,8 +116,8 @@ def calibrate_prob(
             raise RuntimeError("Missing values in s_calib_actual")
 
         if (
-            not len(s_calib_pred) == len(s_calib_actual)
-            or len(s_calib_pred.index.difference(s_calib_actual.index)) > 0
+                not len(s_calib_pred) == len(s_calib_actual)
+                or len(s_calib_pred.index.difference(s_calib_actual.index)) > 0
         ):
             raise RuntimeError(
                 f"len(s_calib_pred): {len(s_calib_pred)} "
@@ -134,7 +134,7 @@ def calibrate_prob(
 
     beta_0, beta_1 = _get_scaling_params(
         s_calib_actual=s_calib_actual,
-        s_calib= prob_to_logodds(s_calib_pred.copy()),
+        s_calib=prob_to_logodds(s_calib_pred.copy()),
     )
     if beta_1 < 0:
         warnings.warn(f"Beta_1 < 0. Very weak {s_calib_pred.name} ?")
@@ -144,13 +144,14 @@ def calibrate_prob(
     )
     return s_test_pred_scaled
 
+
 def resampled_index(
-    df,
-    cols,
-    share_positives,
-    share_negatives,
-    threshold,
-    random_state,
+        df,
+        cols,
+        share_positives,
+        share_negatives,
+        threshold,
+        random_state,
 ):
     """ Resample a dataframe with respect to cols
 
@@ -183,28 +184,30 @@ def resampled_index(
             df_negatives.sample(n=n_negatives_wanted, replace=replacement_neg, random_state=random_state),
         ]
     )
-    
-    
+
     return df
 
+
 def find_index(dicts, key, value):
-    class Null: pass
+    class Null:
+        pass
+
     for i, d in enumerate(dicts):
         if d.get(key, Null) == value:
             return i
     else:
         raise ValueError('no dict with the key and value combination found')
-        
-def RetrieveFromList_X(Datasets,name):
-    
+
+
+def RetrieveFromList_X(Datasets, name):
     df = Datasets[find_index(Datasets, 'Name', name)]['df']
     df = df.drop(Datasets[find_index(Datasets, 'Name', name)]['df'].filter(regex='dep').columns, axis=1)
-    
+
     return df
 
-def RetrieveFromList_y(Datasets,name,depv):
-    
+
+def RetrieveFromList_y(Datasets, name, depv):
     df = Datasets[find_index(Datasets, 'Name', name)]['df']
     df = df[depv]
-    
+
     return df

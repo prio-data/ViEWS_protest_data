@@ -4,38 +4,41 @@ import pandas as pd
 import numpy as np
 from scipy.spatial import cKDTree  # type: ignore
 
+
 def divide_by_pop(df, varname, multiplier):
-    
-    var_out = df[f'{varname}']/df['pgd_pop_gpw_sum']
+    var_out = df[f'{varname}'] / df['pgd_pop_gpw_sum']
     var_out = var_out.replace(np.inf, np.nan)
-    var_out = var_out.fillna(0) # due to pgd_pop_gpw_sum == 0 
-    
-    var_out = var_out*multiplier
-    
+    var_out = var_out.fillna(0)
+
+    var_out = var_out * multiplier
+
     return var_out
 
+
 def moving_sum(s: pd.Series, time: int):
-    "Moving sum"
-    
+    """Moving sum"""
+
     # Group by pg_id
     y = s.groupby(level=1)
-    y = y.rolling(time, min_periods=0) # min_period = n option simply means that you require at least n valid observations to compute your rolling stats
+    y = y.rolling(time,
+                  min_periods=0)
     #  Get max value. 
     y = y.sum()
-    # Groupby and rolling do stuff to indices, return to original form
+    # Group by and rolling do stuff to indices, return to original form
     y = y.reset_index(level=0, drop=True).sort_index().values
     return y
 
+
 def distance_to_event(
-    df,
-    col, 
-    k,
-    fill_value,
+        df,
+        col,
+        k,
+        fill_value,
 ):
     """Get spatial distance to event
 
     Args:
-        gdf: GeoDataFrame with a multiindex like [time, group]  and
+        df: GeoDataFrame with a multiindex like [time, group]  and
             cols for centroid and col.
         col: Name of col to count as event if == 1
         k: Number of neighbors to consider
@@ -43,7 +46,7 @@ def distance_to_event(
     Returns:
         dist: pd.Series of distance to event
     """
-    
+
     # Set geometry.
     gdf = df.set_geometry("geometry")
 
@@ -82,26 +85,27 @@ def distance_to_event(
     s = gdf_results["distance"]
     return s
 
+
 # Function to get the moving minimum.
 def moving_min(s: pd.Series, t: int):
-    "Moving minimum"
-    
+    """Moving minimum"""
+
     # Group by pg_id
     y = s.groupby(level=1)
-    y = y.rolling(t, min_periods=0) # min_period = n option simply means that you require at least n valid observations to compute your rolling stats
+    y = y.rolling(t,
+                  min_periods=0)
     #  Get minimum value. 
     y = y.min()
-    # Groupby and rolling do stuff to indices, return to original form
+    # Group by and rolling do stuff to indices, return to original form
     y = y.reset_index(level=0, drop=True).sort_index().values
     return y
 
 
 def divide_by_pop_cm(df, varname, multiplier):
-    
-    var_out = df[f'{varname}']/df['wdi_sp_pop_totl']
+    var_out = df[f'{varname}'] / df['wdi_sp_pop_totl']
     var_out = var_out.replace(np.inf, np.nan)
-    var_out = var_out.fillna(0) # due to pgd_pop_gpw_sum == 0 
-    
-    var_out = var_out*multiplier
-    
+    var_out = var_out.fillna(0)
+
+    var_out = var_out * multiplier
+
     return var_out
